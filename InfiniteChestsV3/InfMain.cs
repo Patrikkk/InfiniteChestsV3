@@ -139,7 +139,7 @@ namespace InfiniteChestsV3
 						{
 							case ChestAction.GetInfo:
 								gplayer.SendInfoMessage($"X: {gchest.x} | Y: {gchest.y}");
-								string owner = gchest.userid == -1 ? "(None)" : TShock.Users.GetUserByID(gchest.userid) == null ? "(Deleted User)" : TShock.Users.GetUserByID(gchest.userid).Name;
+								string owner = gchest.userid == -1 ? "(None)" : TShock.UserAccounts.GetUserAccountByID(gchest.userid) == null ? "(Deleted User)" : TShock.UserAccounts.GetUserAccountByID(gchest.userid).Name;
 								string ispublic = gchest.isPublic ? " (Public)" : "";
 								string isrefill = gchest.refill > -1 ? $" (Refill: {gchest.refill})" : "";
 								gplayer.SendInfoMessage($"Chest Owner: {owner}{ispublic}{isrefill}");
@@ -152,26 +152,26 @@ namespace InfiniteChestsV3
 									gplayer.SendInfoMessage("Groups Allowed: (None)");
 								if (gchest.users.Count > 0)
 								{
-									string tinfo = string.Join(", ", gchest.users.Select(p => TShock.Users.GetUserByID(p) == null ? "(Deleted User)" : TShock.Users.GetUserByID(p).Name));
+									string tinfo = string.Join(", ", gchest.users.Select(p => TShock.UserAccounts.GetUserAccountByID(p) == null ? "(Deleted User)" : TShock.UserAccounts.GetUserAccountByID(p).Name));
 									gplayer.SendInfoMessage($"Users Allowed: {tinfo}");
 								}
 								else
 									gplayer.SendInfoMessage("Users Allowed: (None)");
 								break;
 							case ChestAction.Protect:
-								if (gchest.userid == gplayer.User.ID)
+								if (gchest.userid == gplayer.Account.ID)
 									gplayer.SendErrorMessage("This chest is already claimed by you!");
 								else if (gchest.userid != -1 && !gplayer.HasPermission("ic.edit"))
 									gplayer.SendErrorMessage("This chest is already claimed by someone else!");
 								else
 								{
-									gchest.userid = gplayer.User.ID;
+									gchest.userid = gplayer.Account.ID;
 									DB.UpdateUser(gchest);
 									gplayer.SendSuccessMessage("This chest is now claimed by you!");
 								}
 								break;
 							case ChestAction.Unprotect:
-								if (gchest.userid != gplayer.User.ID && !gplayer.HasPermission("ic.edit"))
+								if (gchest.userid != gplayer.Account.ID && !gplayer.HasPermission("ic.edit"))
 									gplayer.SendErrorMessage("This chest is not yours!");
 								else if (gchest.userid == -1)
 									gplayer.SendErrorMessage("This chest is not claimed!");
@@ -183,7 +183,7 @@ namespace InfiniteChestsV3
 								}
 								break;
 							case ChestAction.SetGroup:
-								if (gchest.userid != gplayer.User.ID && !gplayer.HasPermission("ic.edit"))
+								if (gchest.userid != gplayer.Account.ID && !gplayer.HasPermission("ic.edit"))
 									gplayer.SendErrorMessage("This chest is not yours!");
 								else if (gchest.userid == -1)
 									gplayer.SendErrorMessage("This chest is not claimed!");
@@ -204,7 +204,7 @@ namespace InfiniteChestsV3
 								}
 								break;
 							case ChestAction.SetRefill:
-								if (gchest.userid != gplayer.User.ID && !gplayer.HasPermission("ic.edit"))
+								if (gchest.userid != gplayer.Account.ID && !gplayer.HasPermission("ic.edit"))
 									gplayer.SendErrorMessage("This chest is not yours!");
 								else if (gchest.userid == -1)
 									gplayer.SendErrorMessage("This chest is not claimed!");
@@ -217,7 +217,7 @@ namespace InfiniteChestsV3
 								}
 								break;
 							case ChestAction.SetUser:
-								if (gchest.userid != gplayer.User.ID && !gplayer.HasPermission("ic.edit"))
+								if (gchest.userid != gplayer.Account.ID && !gplayer.HasPermission("ic.edit"))
 									gplayer.SendErrorMessage("This chest is not yours!");
 								else if (gchest.userid == -1)
 									gplayer.SendErrorMessage("This chest is not claimed!");
@@ -239,7 +239,7 @@ namespace InfiniteChestsV3
 								}
 								break;
 							case ChestAction.TogglePublic:
-								if (gchest.userid != gplayer.User.ID && !gplayer.HasPermission("ic.edit"))
+								if (gchest.userid != gplayer.Account.ID && !gplayer.HasPermission("ic.edit"))
 									gplayer.SendErrorMessage("This chest is not yours!");
 								else if (gchest.userid == -1)
 									gplayer.SendErrorMessage("This chest is not claimed!");
@@ -261,7 +261,7 @@ namespace InfiniteChestsV3
 								break;
 							case ChestAction.None:
 								//check for perms
-								if (gchest.userid != -1 && !gchest.isPublic && !gchest.groups.Contains(gplayer.Group.Name) && !gplayer.HasPermission("ic.edit") && gplayer.IsLoggedIn && gchest.userid != gplayer.User.ID && !gchest.users.Contains(gplayer.User.ID))
+								if (gchest.userid != -1 && !gchest.isPublic && !gchest.groups.Contains(gplayer.Group.Name) && !gplayer.HasPermission("ic.edit") && gplayer.IsLoggedIn && gchest.userid != gplayer.Account.ID && !gchest.users.Contains(gplayer.Account.ID))
 								{
 									gplayer.SendErrorMessage("This chest is protected.");
 									break;
@@ -270,7 +270,7 @@ namespace InfiniteChestsV3
 								info.ChestIdInUse = gchest.id;
 
 								Item[] items;
-								RefillChestInfo rcinfo = GetRCInfo(!gplayer.IsLoggedIn ? -1 : gplayer.User.ID, gchest.id);
+								RefillChestInfo rcinfo = GetRCInfo(!gplayer.IsLoggedIn ? -1 : gplayer.Account.ID, gchest.id);
 
 								//use refill items if exists, or create new refill entry, or use items directly
 								if (gchest.isRefill && rcinfo != null && (DateTime.Now - rcinfo.TimeOpened).TotalSeconds < gchest.refill)
@@ -278,13 +278,13 @@ namespace InfiniteChestsV3
 								else if (gchest.isRefill)
 								{
 									if (rcinfo != null)
-										DeleteOldRCInfo(!gplayer.IsLoggedIn ? -1 : gplayer.User.ID, gchest.id);
+										DeleteOldRCInfo(!gplayer.IsLoggedIn ? -1 : gplayer.Account.ID, gchest.id);
 
 									RefillChestInfo newrcinfo = new RefillChestInfo()
 									{
 										ChestID = gchest.id,
 										CurrentItems = gchest.items,
-										PlayerID = !gplayer.IsLoggedIn ? -1 : gplayer.User.ID,
+										PlayerID = !gplayer.IsLoggedIn ? -1 : gplayer.Account.ID,
 										TimeOpened = DateTime.Now
 									};
 									RCInfos.Add(newrcinfo);
@@ -339,7 +339,7 @@ namespace InfiniteChestsV3
 						if (piinfo.ChestIdInUse == -1)
 							return;
 						InfChest cichest = DB.GetChest(piinfo.ChestIdInUse);
-						RefillChestInfo circinfo = GetRCInfo(!TShock.Players[index].IsLoggedIn ? -1 : TShock.Players[index].User.ID, cichest.id);
+						RefillChestInfo circinfo = GetRCInfo(!TShock.Players[index].IsLoggedIn ? -1 : TShock.Players[index].Account.ID, cichest.id);
 						if (cichest == null)
 						{
 							ciplayer.SendWarningMessage("This chest is corrupted. Please remove it.");
@@ -417,7 +417,7 @@ namespace InfiniteChestsV3
 						}
 
 						break;
-					case PacketTypes.TileKill:
+					case PacketTypes.PlaceChest:
 						if (lockChests)
 						{
 							TShock.Players[args.Msg.whoAmI].SendWarningMessage("Chests are currently being converted. Please wait for a few moments.");
@@ -452,7 +452,7 @@ namespace InfiniteChestsV3
 								{
 									if (action == 2)
 										tilex--;
-									InfChest newChest = new InfChest(TShock.Players[index].HasPermission("ic.protect") ? TShock.Players[index].User.ID : -1, tilex, tiley - 1, Main.worldID);
+									InfChest newChest = new InfChest(TShock.Players[index].HasPermission("ic.protect") ? TShock.Players[index].Account.ID : -1, tilex, tiley - 1, Main.worldID);
 									DB.AddChest(newChest);
 									if (action == 2)
 										tilex++;
@@ -460,7 +460,7 @@ namespace InfiniteChestsV3
 
 								WorldGen.PlaceChest(tilex, tiley, (ushort)(chesttype), false, style);
 								Main.chest[0] = null;
-								NetMessage.SendData((int)PacketTypes.TileKill, -1, -1, NetworkText.Empty, action, tilex, tiley, style);
+								NetMessage.SendData((int)PacketTypes.PlaceChest, -1, -1, NetworkText.Empty, action, tilex, tiley, style);
 							}
 						}
 						else
@@ -487,7 +487,7 @@ namespace InfiniteChestsV3
 										TSPlayer.All.SendData(PacketTypes.Tile, "", 0, tilex, tiley + 1);
 									}
 									//check for perms - chest owner, claim, edit perm
-									else if (chest.userid != player.User.ID && chest.userid != -1 && !player.HasPermission("ic.edit"))
+									else if (chest.userid != player.Account.ID && chest.userid != -1 && !player.HasPermission("ic.edit"))
 									{
 										player.SendErrorMessage("This chest is protected.");
 										player.SendTileSquare(tilex, tiley, 3);
@@ -539,7 +539,7 @@ namespace InfiniteChestsV3
 					File.AppendAllText("debug.txt", $"[OUT] 33 SetChestName: Remote = {args.remoteClient} | Ignore = {args.ignoreClient} | Chest ID = {args.number} | Chest X = {args.number2} | Chest Y = {args.number3} | Name Length = {args.number4} | Chest Name = {args.text}\n");
 #endif
 					break;
-				case PacketTypes.TileKill:
+				case PacketTypes.PlaceChest:
 #if DEBUG
 					File.AppendAllText("debug.txt", $"[OUT] 34 PlaceChest: Remote = {args.remoteClient} | Ignore = {args.ignoreClient} | Action = {args.number} | Tile X = {args.number2} | Tile Y = {args.number3} | Style = {args.number4} | Chest ID = {args.number5}\n");
 #endif
@@ -685,7 +685,7 @@ namespace InfiniteChestsV3
 					else
 					{
 						name = string.Join(" ", args.Parameters.GetRange(1, args.Parameters.Count - 1));
-						var user = TShock.Users.GetUserByName(name);
+						var user = TShock.UserAccounts.GetUserAccountByName(name);
 
 						if (user == null)
 						{
@@ -708,7 +708,7 @@ namespace InfiniteChestsV3
 					else
 					{
 						name = string.Join(" ", args.Parameters.GetRange(1, args.Parameters.Count - 1));
-						var user = TShock.Users.GetUserByName(name);
+						var user = TShock.UserAccounts.GetUserAccountByName(name);
 
 						if (user == null)
 						{
